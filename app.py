@@ -42,17 +42,26 @@ def mcp_metadata():
         },
         "mcp": {
             "transport": "streamable-http",
-            "endpoint": "/mcp"   # ✅ MUST BE RELATIVE
+            "endpoint": "/mcp"   # ✅ MUST be relative
         }
     }
 
 # =========================================================
-# 2️⃣ AUTH FLOW
+# 2️⃣ AUTH FLOW (FIXED — PRESERVE QUERY PARAMS)
 # =========================================================
 @app.get("/auth/start", include_in_schema=False)
-def auth_start():
+def auth_start(request: Request):
     logger.info("Auth start requested")
-    return RedirectResponse("/auth/login")
+
+    # 🔥 CRITICAL FIX:
+    # Claude sends OAuth params → we MUST forward them
+    query = request.url.query
+    redirect_url = "/auth/login"
+    if query:
+        redirect_url += f"?{query}"
+
+    return RedirectResponse(redirect_url)
+
 
 @app.get("/auth/login", include_in_schema=False)
 def auth_login():
@@ -61,7 +70,7 @@ def auth_login():
         return HTMLResponse(f.read())
 
 # =========================================================
-# 3️⃣ AUTH CALLBACK
+# 3️⃣ AUTH CALLBACK (CLAUDE HANDSHAKE)
 # =========================================================
 @app.post("/auth/callback", include_in_schema=False)
 async def auth_callback(payload: dict):
@@ -116,6 +125,7 @@ def oauth_protected_resource():
 
 @app.post("/auth/token", include_in_schema=False)
 async def oauth_token_stub():
+    # Claude probes this endpoint — must exist
     return {"error": "unsupported_grant_type"}
 
 # =========================================================
