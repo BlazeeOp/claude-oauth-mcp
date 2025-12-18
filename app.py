@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 # =========================================================
-# 1️⃣ MCP METADATA
+# 1️⃣ MCP METADATA (CRITICAL)
 # =========================================================
 @app.get("/.well-known/mcp.json", include_in_schema=False)
 @app.get("/well-known/mcp.json", include_in_schema=False)
@@ -42,7 +42,7 @@ def mcp_metadata():
         },
         "mcp": {
             "transport": "streamable-http",
-            "endpoint": f"{BASE_URL}/mcp"
+            "endpoint": "/mcp"   # ✅ MUST BE RELATIVE
         }
     }
 
@@ -94,7 +94,7 @@ async def auth_callback(payload: dict):
     """)
 
 # =========================================================
-# 4️⃣ OAUTH DISCOVERY (CRITICAL)
+# 4️⃣ OAUTH DISCOVERY (REQUIRED BY CLAUDE)
 # =========================================================
 @app.get("/.well-known/oauth-authorization-server", include_in_schema=False)
 def oauth_authorization_server():
