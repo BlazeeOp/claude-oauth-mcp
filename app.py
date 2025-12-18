@@ -13,14 +13,14 @@ app = FastAPI()
 # 1️⃣ MCP METADATA (CLAUDE READS THIS FIRST)
 # =========================================================
 @app.get("/.well-known/mcp.json", include_in_schema=False)
-@app.get("/well-known/mcp.json", include_in_schema=False)  # infra fallback
+@app.get("/well-known/mcp.json", include_in_schema=False)
 def mcp_metadata():
     return JSONResponse({
         "name": "Math MCP",
         "version": "1.0.0",
         "auth": {
             "type": "oauth",
-            "authorization_url": "/auth/start"
+            "authorization_url": "https://claude-oauth-mcp-production.up.railway.app/auth/start"
         },
         "mcp": {
             "transport": "streamable-http",
