@@ -79,6 +79,36 @@ async def auth_callback(payload: dict):
     """)
 
 
+
+@app.get("/auth/debug", include_in_schema=False)
+def auth_debug():
+    return HTMLResponse("""
+    <html>
+      <body>
+        <h2>Finalizing login…</h2>
+        <script>
+          const token = sessionStorage.getItem("idToken");
+          fetch("/auth/callback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: token })
+          })
+          .then(res => res.text())
+          .then(html => {
+            document.open();
+            document.write(html);
+            document.close();
+          });
+        </script>
+      </body>
+    </html>
+    """)
+
+
+
+
+
+
 # =========================================================
 # 4️⃣ MCP ENDPOINT
 # =========================================================

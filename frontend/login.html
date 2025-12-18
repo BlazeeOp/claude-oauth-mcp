@@ -61,31 +61,28 @@
     <button onclick="login()">Login</button>
 
     <script>
-      // 🔹 YOUR FIREBASE CONFIG (unchanged)
-      const firebaseConfig = {
-        apiKey: "AIzaSyDan9cZhjlRh6E2NJazWMgjBVr7oH9kUxU",
-        authDomain: "math-mcp.firebaseapp.com",
-        projectId: "math-mcp",
-      };
+  const firebaseConfig = {
+    apiKey: "AIzaSyDan9cZhjlRh6E2NJazWMgjBVr7oH9kUxU",
+    authDomain: "math-mcp.firebaseapp.com",
+    projectId: "math-mcp",
+    appId: "1:401877262712:web:1264b476306f7f8922e88d"
+  };
 
-      firebase.initializeApp(firebaseConfig);
-      const auth = firebase.auth();
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-      async function login() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        const result = await auth.signInWithPopup(provider);
-        const idToken = await result.user.getIdToken();
+  async function login() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await auth.signInWithPopup(provider);
+    const idToken = await result.user.getIdToken();
 
-        // 🔴 DEBUG: DO NOT AUTO CLOSE
-        await fetch("/auth/callback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken })
-        });
+    // Store token temporarily so backend can read it
+    sessionStorage.setItem("idToken", idToken);
 
-        // ⛔ COMMENT THIS OUT FOR DEBUG
-        // window.close();
-      }
-    </script>
+    // Redirect browser (NOT fetch)
+    window.location.href = "/auth/debug";
+  }
+</script>
+
   </body>
 </html>
