@@ -3,14 +3,17 @@ from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from mcp.protocol import handle_mcp
 from auth.firebase import verify_firebase_token
 
-# 🔹 APP MUST BE DEFINED FIRST
+# =========================================================
+# APP INITIALIZATION
+# =========================================================
 app = FastAPI()
+
 
 # =========================================================
 # 1️⃣ MCP METADATA (CLAUDE READS THIS FIRST)
 # =========================================================
 @app.get("/.well-known/mcp.json", include_in_schema=False)
-@app.get("/well-known/mcp.json", include_in_schema=False)  # fallback
+@app.get("/well-known/mcp.json", include_in_schema=False)  # infra fallback
 def mcp_metadata():
     return JSONResponse({
         "name": "Math MCP",
@@ -41,7 +44,7 @@ def auth_login():
 
 
 # =========================================================
-# 3️⃣ AUTH CALLBACK (CLAUDE + DEBUG FRIENDLY)
+# 3️⃣ AUTH CALLBACK (CLAUDE PRODUCTION MODE)
 # =========================================================
 @app.post("/auth/callback", include_in_schema=False)
 async def auth_callback(payload: dict):
@@ -49,19 +52,13 @@ async def auth_callback(payload: dict):
     if not token:
         return HTMLResponse("<h3>Missing idToken</h3>", status_code=400)
 
-    # Verify Firebase token
+    # Verify Firebase ID token
     verify_firebase_token(token)
 
-    # IMPORTANT:
-    # - Shows token for manual testing
-    # - Sends postMessage Claude expects
-    # - Does NOT auto-close so you can copy token
+    # REQUIRED: send token to Claude via postMessage and close popup
     return HTMLResponse(f"""
     <html>
       <body>
-        <h2>ACCESS TOKEN (copy this for testing)</h2>
-        <pre style="white-space: break-all;">{token}</pre>
-
         <script>
           window.opener?.postMessage(
             {{
@@ -71,42 +68,12 @@ async def auth_callback(payload: dict):
             }},
             "*"
           );
+          window.close();
         </script>
-
-        <p>You may close this window after copying the token.</p>
+        <p>Authentication successful. You may close this window.</p>
       </body>
     </html>
     """)
-
-
-
-@app.get("/auth/debug", include_in_schema=False)
-def auth_debug():
-    return HTMLResponse("""
-    <html>
-      <body>
-        <h2>Finalizing login…</h2>
-        <script>
-          const token = sessionStorage.getItem("idToken");
-          fetch("/auth/callback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken: token })
-          })
-          .then(res => res.text())
-          .then(html => {
-            document.open();
-            document.write(html);
-            document.close();
-          });
-        </script>
-      </body>
-    </html>
-    """)
-
-
-
-
 
 
 # =========================================================
