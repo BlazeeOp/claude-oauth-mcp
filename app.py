@@ -41,6 +41,8 @@ async def auth_callback(payload: dict):
     return HTMLResponse(f"""
     <html>
       <body>
+        <h3>ACCESS TOKEN (copy this)</h3>
+        <pre style="white-space: break-all;">{token}</pre>
         <script>
           window.opener?.postMessage(
             {{
@@ -52,10 +54,10 @@ async def auth_callback(payload: dict):
           );
           window.close();
         </script>
-        <p>Authentication successful. You may close this window.</p>
       </body>
     </html>
     """)
+
 
 # 3️⃣ MCP ENDPOINT
 @app.post("/mcp", include_in_schema=False)
