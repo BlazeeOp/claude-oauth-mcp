@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
   <title>Login</title>
@@ -7,7 +7,7 @@
   <h2>Login with Google</h2>
   <button onclick="login()">Login</button>
 
-  <!-- Firebase COMPAT SDK (IMPORTANT) -->
+   Firebase COMPAT SDK (IMPORTANT) 
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 
@@ -42,4 +42,50 @@
     }
   </script>
 </body>
+</html>
+
+ -->
+
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Login</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  </head>
+
+  <body>
+    <h2>Login with Google</h2>
+    <button onclick="login()">Login</button>
+
+    <script>
+      // 🔹 YOUR FIREBASE CONFIG (unchanged)
+      const firebaseConfig = {
+        apiKey: "AIzaSyDan9cZhjlRh6E2NJazWMgjBVr7oH9kUxU",
+        authDomain: "math-mcp.firebaseapp.com",
+        projectId: "math-mcp",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+
+      async function login() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const result = await auth.signInWithPopup(provider);
+        const idToken = await result.user.getIdToken();
+
+        // 🔴 DEBUG: DO NOT AUTO CLOSE
+        await fetch("/auth/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken })
+        });
+
+        // ⛔ COMMENT THIS OUT FOR DEBUG
+        // window.close();
+      }
+    </script>
+  </body>
 </html>
