@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from mcp.protocol import handle_mcp
 from auth.firebase import verify_firebase_token
 
+
 app = FastAPI()
 
 # 1️⃣ MCP METADATA (CLAUDE READS THIS FIRST)
@@ -37,10 +38,24 @@ async def auth_callback(payload: dict):
     token = payload["idToken"]
     verify_firebase_token(token)
 
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
+    return HTMLResponse(f"""
+    <html>
+      <body>
+        <script>
+          window.opener?.postMessage(
+            {{
+              type: "mcp-auth-success",
+              access_token: "{token}",
+              token_type: "bearer"
+            }},
+            "*"
+          );
+          window.close();
+        </script>
+        <p>Authentication successful. You may close this window.</p>
+      </body>
+    </html>
+    """)
 
 # 3️⃣ MCP ENDPOINT
 @app.post("/mcp", include_in_schema=False)
