@@ -3,7 +3,7 @@
   <head>
     <title>Login</title>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase COMPAT SDKs (REQUIRED) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   </head>
@@ -35,17 +35,20 @@
           // Get Firebase ID token
           const idToken = await result.user.getIdToken();
 
-          // Send token to backend (Claude OAuth flow)
+          // 🔑 Send token to backend
           await fetch("/auth/callback", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ idToken })
           });
 
-          // Close popup (Claude expects this)
-          window.close();
+          // 🔴 DO NOTHING ELSE
+          // Backend will:
+          // 1. postMessage token to Claude
+          // 2. close the window
         } catch (err) {
           alert("Login failed: " + err.message);
+          console.error(err);
         }
       }
     </script>

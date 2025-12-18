@@ -50,16 +50,15 @@ def auth_login():
 async def auth_callback(payload: dict):
     token = payload.get("idToken")
     if not token:
-        return HTMLResponse("<h3>Missing idToken</h3>", status_code=400)
+        return HTMLResponse("Missing token", status_code=400)
 
-    # Verify Firebase ID token
     verify_firebase_token(token)
 
-    # REQUIRED: send token to Claude via postMessage and close popup
     return HTMLResponse(f"""
     <html>
       <body>
         <script>
+          // 🔑 Send token back to Claude
           window.opener?.postMessage(
             {{
               type: "mcp-auth-success",
@@ -68,9 +67,12 @@ async def auth_callback(payload: dict):
             }},
             "*"
           );
+
+          // 🔑 CLOSE THE WINDOW (THIS IS CRITICAL)
           window.close();
         </script>
-        <p>Authentication successful. You may close this window.</p>
+
+        <p>Authentication successful. You can close this window.</p>
       </body>
     </html>
     """)
