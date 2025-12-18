@@ -120,10 +120,13 @@ def oauth_authorization_server():
 
 @app.get("/.well-known/oauth-protected-resource", include_in_schema=False)
 def oauth_protected_resource():
-    return JSONResponse({
-        "resource": BASE_URL,
-        "authorization_servers": [BASE_URL]
-    })
+    return {
+        "resource": "https://claude-oauth-mcp-production.up.railway.app/mcp",
+        "authorization_servers": [
+            "https://claude-oauth-mcp-production.up.railway.app"
+        ]
+    }
+
 
 
 @app.post("/auth/token", include_in_schema=False)
