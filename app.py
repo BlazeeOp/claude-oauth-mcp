@@ -24,7 +24,8 @@ def mcp_metadata():
         },
         "mcp": {
             "transport": "streamable-http",
-            "endpoint": "/mcp"
+            "endpoint": "https://claude-oauth-mcp-production.up.railway.app/mcp"
+
         }
     })
 
