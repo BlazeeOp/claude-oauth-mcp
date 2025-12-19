@@ -1,115 +1,46 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse, JSONResponse
+import os, logging
 from mcp.protocol import handle_mcp
-from auth.firebase import verify_firebase_token
-import logging
+from auth.github import (
+    get_github_auth_url,
+    exchange_code_for_token,
+    get_github_user
+)
 
-# =========================================================
-# CONFIG
-# =========================================================
-BASE_URL = "https://claude-oauth-mcp-production.up.railway.app"
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# =========================================================
-# APP INITIALIZATION
-# =========================================================
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# =========================================================
-# 1️⃣ MCP METADATA (CRITICAL)
-# =========================================================
+# =====================================================
+# MCP METADATA
+# =====================================================
 @app.get("/.well-known/mcp.json", include_in_schema=False)
-@app.get("/well-known/mcp.json", include_in_schema=False)
 def mcp_metadata():
-    logger.info("MCP metadata requested")
     return {
-        "name": "Math MCP",
+        "name": "Claude Math MCP",
         "version": "1.0.0",
         "auth": {
             "type": "oauth",
-            "authorization_url": f"{BASE_URL}/auth/start"
+            "authorization_url": f"{BASE_URL}/auth/github/start"
         },
         "mcp": {
             "transport": "streamable-http",
-            "endpoint": "/mcp"   # ✅ MUST be relative
+            "endpoint": "/mcp"
         }
     }
 
-# =========================================================
-# 2️⃣ AUTH FLOW (FIXED — PRESERVE QUERY PARAMS)
-# =========================================================
-@app.get("/auth/start", include_in_schema=False)
-def auth_start(request: Request):
-    logger.info("Auth start requested")
-
-    # 🔥 CRITICAL FIX:
-    # Claude sends OAuth params → we MUST forward them
-    query = request.url.query
-    redirect_url = "/auth/login"
-    if query:
-        redirect_url += f"?{query}"
-
-    return RedirectResponse(redirect_url)
-
-
-@app.get("/auth/login", include_in_schema=False)
-def auth_login():
-    logger.info("Login page requested")
-    with open("frontend/login.html", encoding="utf-8") as f:
-        return HTMLResponse(f.read())
-
-# =========================================================
-# 3️⃣ AUTH CALLBACK (CLAUDE HANDSHAKE)
-# =========================================================
-@app.post("/auth/callback", include_in_schema=False)
-async def auth_callback(payload: dict):
-    logger.info("Auth callback received")
-
-    token = payload.get("idToken")
-    if not token:
-        return HTMLResponse("Missing idToken", status_code=400)
-
-    verify_firebase_token(token)
-    logger.info("Token verified")
-
-    return HTMLResponse(f"""
-    <html>
-      <body>
-        <script>
-          window.opener?.postMessage(
-            {{
-              type: "mcp-auth-success",
-              access_token: "{token}",
-              token_type: "bearer"
-            }},
-            "*"
-          );
-          window.close();
-        </script>
-        <p>Authentication successful. You may close this window.</p>
-      </body>
-    </html>
-    """)
-
-# =========================================================
-# 4️⃣ OAUTH DISCOVERY (REQUIRED BY CLAUDE)
-# =========================================================
+# =====================================================
+# OAUTH DISCOVERY (Claude probes these)
+# =====================================================
 @app.get("/.well-known/oauth-authorization-server", include_in_schema=False)
 def oauth_authorization_server():
     return {
         "issuer": BASE_URL,
-        "authorization_endpoint": f"{BASE_URL}/auth/start",
+        "authorization_endpoint": f"{BASE_URL}/auth/github/start",
         "token_endpoint": f"{BASE_URL}/auth/token",
         "response_types_supported": ["token"],
         "grant_types_supported": ["implicit"],
@@ -124,21 +55,34 @@ def oauth_protected_resource():
     }
 
 @app.post("/auth/token", include_in_schema=False)
-async def oauth_token_stub():
-    # Claude probes this endpoint — must exist
-    return {"error": "unsupported_grant_type"}
+async def token_stub():
+    return JSONResponse({"error": "unsupported_grant_type"}, status_code=400)
 
-# =========================================================
-# 5️⃣ MCP ENDPOINT
-# =========================================================
+# =====================================================
+# GITHUB OAUTH FLOW
+# =====================================================
+@app.get("/auth/github/start", include_in_schema=False)
+def github_start():
+    return RedirectResponse(get_github_auth_url())
+
+@app.get("/auth/github/callback", include_in_schema=False)
+async def github_callback(code: str):
+    token = await exchange_code_for_token(code)
+    user = await get_github_user(token)
+
+    return JSONResponse({
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    })
+
+# =====================================================
+# MCP ENDPOINT
+# =====================================================
 @app.post("/mcp", include_in_schema=False)
 async def mcp_endpoint(request: Request):
-    logger.info("MCP request received")
     return await handle_mcp(request)
 
-# =========================================================
-# 6️⃣ HEALTH CHECK
-# =========================================================
 @app.get("/", include_in_schema=False)
-def health_check():
+def health():
     return {"status": "ok"}

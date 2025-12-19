@@ -1,20 +1,13 @@
-def add(a: int, b: int):
-    return {"result": a + b}
+def add(a: float, b: float):
+    return a + b
 
-def subtract(a: int, b: int):
-    return {"result": a - b}
+def subtract(a: float, b: float):
+    return a - b
 
-def multiply(a: int, b: int):
-    return {"result": a * b}
+def multiply(a: float, b: float):
+    return a * b
 
-def divide(a: int, b: int):
+def divide(a: float, b: float):
     if b == 0:
-        return {"error": "Division by zero"}
-    return {"result": a / b}
-
-TOOLS = {
-    "add": add,
-    "subtract": subtract,
-    "multiply": multiply,
-    "divide": divide
-}
+        raise ValueError("Division by zero")
+    return a / b
